@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Respark Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-900 flex items-center justify-center min-h-screen text-white">
+
+<div class="w-full max-w-md bg-zinc-800 rounded-3xl p-10">
+  <h1 class="text-5xl font-bold text-emerald-400 text-center mb-8">Respark</h1>
+  <h2 class="text-2xl text-center mb-6">Login</h2>
+
+  <form onsubmit="handleLogin(event)">
+    <input type="email" id="email" value="student@respark.edu"
+      class="w-full mb-4 p-4 rounded-xl bg-zinc-900 border border-zinc-700">
+
+    <input type="password" id="password" value="123456"
+      class="w-full mb-6 p-4 rounded-xl bg-zinc-900 border border-zinc-700">
+
+    <button class="w-full bg-emerald-500 py-4 rounded-xl">Sign In</button>
+  </form>
+</div>
+
+<script>
+function handleLogin(e) {
+  e.preventDefault();
+
+  // simple login (no backend)
+  const email = document.getElementById('email').value;
+
+  // store login status
+  localStorage.setItem("user", email);
+
+  // redirect to booking page
+  window.location.href = "booking.html";
+}
+</script>
+
+</body>
+</html>

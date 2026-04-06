@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Respark Booking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+
+<!-- LOCATION SCREEN -->
+<div id="location-screen" class="min-h-screen flex items-center justify-center bg-zinc-900">
+  <div class="w-full max-w-md bg-zinc-800 rounded-3xl p-10 text-center">
+    <h1 class="text-4xl text-emerald-400 mb-6">Respark</h1>
+
+    <select id="location-select" class="w-full p-4 rounded-xl bg-zinc-900 border border-zinc-700">
+      <option value="">Select Location</option>
+      <option value="30">Library (30 spaces)</option>
+      <option value="50">COE (50 spaces)</option>
+      <option value="40">Hostel (40 spaces)</option>
+    </select>
+
+    <button onclick="selectLocation()" class="mt-6 w-full bg-emerald-500 py-4 rounded-xl">
+      Continue
+    </button>
+  </div>
+</div>
+
+<!-- MAIN SCREEN -->
+<div id="main-screen" class="hidden p-6">
+  <div class="flex justify-between mb-4">
+    <h2 id="location-title"></h2>
+    <button onclick="logout()" class="bg-red-500 px-4 py-2 rounded-xl">Logout</button>
+  </div>
+
+  <div id="grid" class="grid grid-cols-5 gap-3"></div>
+
+  <h3 class="mt-6">My Bookings</h3>
+  <div id="bookings"></div>
+</div>
+
+<script>
+let bookings = [];
+let totalSpots = 0;
+
+// check login
+if (!localStorage.getItem("user")) {
+  window.location.href = "login.html";
+}
+
+function selectLocation() {
+  const val = document.getElementById('location-select').value;
+
+  if (!val) {
+    alert("Select location");
+    return;
+  }
+
+  totalSpots = parseInt(val);
+
+  document.getElementById('location-screen').classList.add('hidden');
+  document.getElementById('main-screen').classList.remove('hidden');
+
+  loadSpots();
+}
+
+function loadSpots() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = "";
+
+  for (let i = 1; i <= totalSpots; i++) {
+    const isBooked = bookings.includes(i);
+
+    const div = document.createElement("div");
+    div.className = `p-6 text-center rounded-xl cursor-pointer ${
+      isBooked ? "bg-red-500" : "bg-white text-black"
+    }`;
+
+    div.textContent = i;
+
+    if (!isBooked) {
+      div.onclick = () => {
+        bookings.push(i);
+        loadSpots();
+        showBookings();
+      };
+    }
+
+    grid.appendChild(div);
+  }
+
+  showBookings();
+}
+
+function showBookings() {
+  const b = document.getElementById('bookings');
+
+  b.innerHTML = bookings.map((x, i) => `
+    <div class="flex justify-between bg-zinc-800 p-3 mt-2 rounded">
+      Spot ${x}
+      <button onclick="cancel(${i})">Cancel</button>
+    </div>
+  `).join("");
+}
+
+function cancel(i) {
+  bookings.splice(i, 1);
+  loadSpots();
+}
+
+function logout() {
+  localStorage.removeItem("user");
+  window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>
