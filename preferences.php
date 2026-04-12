@@ -8,10 +8,9 @@ $msg  = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newLang  = in_array($_POST['lang_pref'] ?? '', ['ms','en']) ? $_POST['lang_pref'] : 'ms';
     $notifPush = isset($_POST['notify_push']) ? 1 : 0;
-    $notifSms  = isset($_POST['notify_sms'])  ? 1 : 0;
 
-    db()->prepare("UPDATE users SET lang_pref=?, notify_push=?, notify_sms=? WHERE id=?")
-       ->execute([$newLang, $notifPush, $notifSms, $user['id']]);
+    db()->prepare("UPDATE users SET lang_pref=?, notify_push=? WHERE id=?")
+       ->execute([$newLang, $notifPush, $user['id']]);
 
     // Refresh session
     $stmt = db()->prepare("SELECT * FROM users WHERE id=?");
@@ -65,10 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;cursor:pointer;">
                     <input type="checkbox" name="notify_push" <?= $user['notify_push']?'checked':'' ?> style="width:16px;height:16px;accent-color:var(--accent);">
                     <?= $lang==='ms'?'Notifikasi Push (dalam app)':'Push Notifications (in-app)' ?>
-                </label>
-                <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;">
-                    <input type="checkbox" name="notify_sms" <?= $user['notify_sms']?'checked':'' ?> style="width:16px;height:16px;accent-color:var(--accent);">
-                    <?= $lang==='ms'?'Notifikasi SMS':'SMS Notifications' ?>
                 </label>
                 <p class="muted-text" style="margin-top:.6rem;">
                     <?= $lang==='ms'?'Nyahtanda untuk opt-out. Tetapan disimpan dengan selamat (SR5).':'Uncheck to opt-out. Settings stored securely (SR5).' ?>
