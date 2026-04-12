@@ -10,27 +10,32 @@ if (isset($_GET['lang']) && in_array($_GET['lang'], ['ms', 'en'], true)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $sid = trim($_POST['student_id'] ?? '');
+    $sid = trim($_POST['user_id'] ?? '');
     $pass = $_POST['password'] ?? '';
     $lang = in_array($_POST['lang'] ?? 'ms', ['ms', 'en']) ? $_POST['lang'] : 'ms';
 
     if ($sid && $pass) {
-        $stmt = db()->prepare("SELECT * FROM users WHERE student_id = ? AND is_active = 1");
+        $stmt = db()->prepare("SELECT * FROM users WHERE user_id = ? AND is_active = 1");
         $stmt->execute([$sid]);
         $user = $stmt->fetch();
 
         $passwordOk = false;
+
         if ($user) {
             $stored = $user['password_hash'];
 
+            // Case 1: Already hashed
             if (password_verify($pass, $stored)) {
                 $passwordOk = true;
-            } elseif ($stored === $pass) {
-                // legacy plain-text password, migrate to a secure hash
+
+                // Case 2: Legacy plain-text password
+            } elseif (!password_get_info($stored)['algo'] && hash_equals($stored, $pass)) {
                 $passwordOk = true;
+
+                // Migrate to hashed password
                 $newHash = password_hash($pass, PASSWORD_DEFAULT);
-                $update = db()->prepare("UPDATE users SET password_hash = ? WHERE student_id = ?");
-                $update->execute([$newHash, $user['student_id']]);
+                $update = db()->prepare("UPDATE users SET password_hash = ? WHERE user_id = ?");
+                $update->execute([$newHash, $user['user_id']]);
             }
         }
 
@@ -128,13 +133,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="field-group">
                         <label class="field-label"><?= $lang === 'ms' ? 'ID Pelajar' : 'Student ID' ?></label>
-                        <input class="field-input" type="text" name="student_id" placeholder="A22EC0001" required
-                            autocomplete="username" value="<?= h($_POST['student_id'] ?? '') ?>">
+                        <input class="field-input" type="text" name="user_id" placeholder="A22EC0001" required
+                            autocomplete="username" value="<?= h($_POST['user_id'] ?? '') ?>">
                     </div>
 
                     <div class="field-group">
                         <label class="field-label"><?= $lang === 'ms' ? 'Kata Laluan' : 'Password' ?></label>
-                        <input class="field-input" type="password" name="password" required autocomplete="current-password">
+                        <input class="field-input" type="password" name="password" required
+                            autocomplete="current-password">
                     </div>
 
                     <button type="submit"

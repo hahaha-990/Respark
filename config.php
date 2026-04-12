@@ -73,7 +73,7 @@ function studentIdHash(string $id): string {
 function logEligibility(string $studentId, string $action, bool $found, string $decision, string $reason = '', string $device = ''): void {
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     db()->prepare("INSERT INTO eligibility_audit
-        (student_id_hash, action, timetable_found, decision, deny_reason, requestor_ip, device_info)
+        (user_id_hash, action, timetable_found, decision, deny_reason, requestor_ip, device_info)
         VALUES (?,?,?,?,?,?,?)")
         ->execute([studentIdHash($studentId), $action, $found ? 1 : 0, $decision, $reason, $ip, substr($device ?: ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 250)]);
 }
@@ -86,7 +86,7 @@ function t(string $key, string $lang = 'ms'): string {
             'tagline'          => 'Parkir Bijak, Belajar Fokus',
             'login'            => 'Log Masuk',
             'logout'           => 'Log Keluar',
-            'student_id'       => 'ID Pelajar',
+            'user_id'       => 'ID Pelajar',
             'password'         => 'Kata Laluan',
             'search_slot'      => 'Cari Slot Parking',
             'available'        => 'Tersedia',
@@ -115,7 +115,7 @@ function t(string $key, string $lang = 'ms'): string {
             'tagline'          => 'Park Smart, Study Focused',
             'login'            => 'Login',
             'logout'           => 'Logout',
-            'student_id'       => 'Student ID',
+            'user_id'       => 'Student ID',
             'password'         => 'Password',
             'search_slot'      => 'Search Parking Slot',
             'available'        => 'Available',

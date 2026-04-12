@@ -20,14 +20,14 @@ $utilizationPct = $stats['total_slots'] > 0
 
 // ── Live bookings feed ────────────────────────────────────
 $liveBookings = db()->query("
-    SELECT b.id, b.student_id, b.status, b.class_start, b.class_end, b.grace_deadline,
+    SELECT b.id, b.user_id, b.status, b.class_start, b.class_end, b.grace_deadline,
            b.booked_at, ps.slot_code, cz.name as zone_name, cz.name_ms as zone_name_ms,
            ct.course_code, ct.course_name, u.full_name
     FROM bookings b
     JOIN parking_slots ps ON b.slot_id = ps.id
     JOIN campus_zones cz ON ps.zone_id = cz.id
     JOIN class_timetable ct ON b.timetable_id = ct.id
-    LEFT JOIN users u ON b.student_id = u.student_id
+    LEFT JOIN users u ON b.user_id = u.user_id
     WHERE b.status IN ('pending','confirmed','active')
     ORDER BY b.booked_at DESC
     LIMIT 50
@@ -48,7 +48,7 @@ $zones = db()->query("
 $violations = db()->query("
     SELECT v.*, u.full_name, ub.full_name as issued_by_name
     FROM violations v
-    LEFT JOIN users u ON v.student_id = u.student_id
+    LEFT JOIN users u ON v.user_id = u.user_id
     LEFT JOIN users ub ON v.issued_by = ub.id
     WHERE v.status = 'open'
     ORDER BY v.issued_at DESC LIMIT 20
@@ -169,7 +169,7 @@ $auditLog = db()->query("
                         <tr data-id="<?= $bk['id'] ?>">
                             <td><?= $bk['id'] ?></td>
                             <td>
-                                <strong><?= h($bk['student_id']) ?></strong><br>
+                                <strong><?= h($bk['user_id']) ?></strong><br>
                                 <small><?= h($bk['full_name']) ?></small>
                             </td>
                             <td><code><?= h($bk['slot_code']) ?></code></td>
@@ -179,10 +179,10 @@ $auditLog = db()->query("
                             <td><?= date('h:i A', strtotime($bk['class_end'])) ?></td>
                             <td><span class="status--<?= h($bk['status']) ?>"><?= ucfirst($bk['status']) ?></span></td>
                             <td class="action-cell">
-                                <button class="btn btn--xs btn--danger" onclick="adminCancel(<?= $bk['id'] ?>, '<?= h($bk['student_id']) ?>')">
+                                <button class="btn btn--xs btn--danger" onclick="adminCancel(<?= $bk['id'] ?>, '<?= h($bk['user_id']) ?>')">
                                     <?= $lang==='ms'?'Batal':'Cancel' ?>
                                 </button>
-                                <button class="btn btn--xs btn--warn" onclick="openViolation(<?= $bk['id'] ?>, '<?= h($bk['student_id']) ?>')">
+                                <button class="btn btn--xs btn--warn" onclick="openViolation(<?= $bk['id'] ?>, '<?= h($bk['user_id']) ?>')">
                                     ⚠️
                                 </button>
                             </td>
@@ -215,7 +215,7 @@ $auditLog = db()->query("
                     <tbody>
                         <?php foreach ($violations as $v): ?>
                         <tr>
-                            <td><?= h($v['student_id']) ?> — <?= h($v['full_name']) ?></td>
+                            <td><?= h($v['user_id']) ?> — <?= h($v['full_name']) ?></td>
                             <td><span class="badge badge--red"><?= h($v['type']) ?></span></td>
                             <td><?= h($v['description']) ?></td>
                             <td><?= h($v['issued_by_name']) ?></td>
@@ -253,7 +253,7 @@ $auditLog = db()->query("
                     <tbody>
                         <?php foreach ($auditLog as $log): ?>
                         <tr>
-                            <td><code><?= substr(h($log['student_id_hash']),0,12) ?>…</code></td>
+                            <td><code><?= substr(h($log['user_id_hash']),0,12) ?>…</code></td>
                             <td><?= h($log['action']) ?></td>
                             <td><?= $log['timetable_found'] ? '✅' : '❌' ?></td>
                             <td><span class="status--<?= $log['decision']==='allowed'?'confirmed':'auto_cancelled' ?>"><?= $log['decision'] ?></span></td>
@@ -315,7 +315,7 @@ document.getElementById('vSubmitBtn').addEventListener('click', async () => {
     const res = await apiPost('api.php', {
         action: 'issue_violation',
         booking_id: document.getElementById('vBookingId').value,
-        student_id: document.getElementById('vStudentId').value,
+        user_id: document.getElementById('vStudentId').value,
         type: document.getElementById('vType').value,
         description: document.getElementById('vDesc').value
     });

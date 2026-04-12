@@ -16,12 +16,12 @@ $stmtTT = db()->prepare("
     SELECT ct.*, cz.name as zone_name, cz.name_ms as zone_name_ms, cz.code as zone_code
     FROM class_timetable ct
     JOIN campus_zones cz ON ct.zone_id = cz.id
-    WHERE ct.student_id = ?
+    WHERE ct.user_id = ?
       AND ct.day_of_week = ?
       AND ? BETWEEN ct.effective_from AND ct.effective_to
     ORDER BY ct.start_time
 ");
-$stmtTT->execute([$user['student_id'], $dow, $date]);
+$stmtTT->execute([$user['user_id'], $dow, $date]);
 $todayClasses = $stmtTT->fetchAll();
 
 // Active or upcoming class within 30 min window
@@ -37,7 +37,7 @@ foreach ($todayClasses as $cls) {
 }
 
 // Log eligibility (SR2)
-logEligibility($user['student_id'], 'dashboard_load', !empty($todayClasses),
+logEligibility($user['user_id'], 'dashboard_load', !empty($todayClasses),
     $eligibleClass ? 'allowed' : 'denied',
     $eligibleClass ? '' : 'No active/upcoming class in 30min window');
 
@@ -72,20 +72,20 @@ $stmtBk = db()->prepare("
     JOIN parking_slots ps ON b.slot_id = ps.id
     JOIN campus_zones cz ON ps.zone_id = cz.id
     JOIN class_timetable ct ON b.timetable_id = ct.id
-    WHERE b.student_id = ?
+    WHERE b.user_id = ?
       AND b.status IN ('pending','confirmed','active')
     ORDER BY b.class_start DESC
 ");
-$stmtBk->execute([$user['student_id']]);
+$stmtBk->execute([$user['user_id']]);
 $activeBookings = $stmtBk->fetchAll();
 
 // ── Notifications ─────────────────────────────────────────
 $stmtNotif = db()->prepare("
     SELECT * FROM notifications
-    WHERE student_id = ? AND delivered = 0
+    WHERE user_id = ? AND delivered = 0
     ORDER BY id DESC LIMIT 10
 ");
-$stmtNotif->execute([$user['student_id']]);
+$stmtNotif->execute([$user['user_id']]);
 $notifications = $stmtNotif->fetchAll();
 // Mark as delivered
 if ($notifications) {
@@ -101,11 +101,11 @@ $stmtHist = db()->prepare("
     JOIN parking_slots ps ON b.slot_id = ps.id
     JOIN campus_zones cz ON ps.zone_id = cz.id
     JOIN class_timetable ct ON b.timetable_id = ct.id
-    WHERE b.student_id = ?
+    WHERE b.user_id = ?
       AND b.status IN ('completed','cancelled','auto_cancelled')
     ORDER BY b.booked_at DESC LIMIT 10
 ");
-$stmtHist->execute([$user['student_id']]);
+$stmtHist->execute([$user['user_id']]);
 $history = $stmtHist->fetchAll();
 
 $zoneName = fn($row) => $lang === 'ms' ? ($row['zone_name_ms'] ?? $row['zone_name']) : $row['zone_name'];
@@ -306,7 +306,7 @@ $zoneName = fn($row) => $lang === 'ms' ? ($row['zone_name_ms'] ?? $row['zone_nam
 <script src="app.js"></script>
 <script>
 const LANG = '<?= $lang ?>';
-const STUDENT_ID = '<?= h($user['student_id']) ?>';
+const user_id = '<?= h($user['user_id']) ?>';
 
 // Grace period countdown timers
 document.querySelectorAll('.grace-timer').forEach(el => {

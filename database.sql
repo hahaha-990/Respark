@@ -14,7 +14,7 @@ USE campus_parking;
 -- ============================================================
 CREATE TABLE users (
     id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id    VARCHAR(20)  UNIQUE NOT NULL,          -- e.g. A22EC0001
+    user_id    VARCHAR(20)  UNIQUE NOT NULL,          -- e.g. A22EC0001
     full_name     VARCHAR(120) NOT NULL,
     email         VARCHAR(180) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -62,7 +62,7 @@ CREATE TABLE parking_slots (
 -- ============================================================
 CREATE TABLE class_timetable (
     id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id   VARCHAR(20)  NOT NULL,
+    user_id   VARCHAR(20)  NOT NULL,
     course_code  VARCHAR(20)  NOT NULL,
     course_name  VARCHAR(160) NOT NULL,
     zone_id      INT UNSIGNED NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE class_timetable (
     FOREIGN KEY (zone_id) REFERENCES campus_zones(id)
 );
 
-CREATE INDEX idx_tt_student  ON class_timetable(student_id);
+CREATE INDEX idx_tt_student  ON class_timetable(user_id);
 CREATE INDEX idx_tt_day_time ON class_timetable(day_of_week, start_time, end_time);
 
 -- ============================================================
@@ -85,7 +85,7 @@ CREATE INDEX idx_tt_day_time ON class_timetable(day_of_week, start_time, end_tim
 -- ============================================================
 CREATE TABLE bookings (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id      VARCHAR(20)  NOT NULL,
+    user_id      VARCHAR(20)  NOT NULL,
     slot_id         INT UNSIGNED NOT NULL,
     timetable_id    INT UNSIGNED NOT NULL,
     status          ENUM('pending','confirmed','active','completed','cancelled','auto_cancelled') NOT NULL DEFAULT 'pending',
@@ -102,7 +102,7 @@ CREATE TABLE bookings (
     FOREIGN KEY (cancelled_by) REFERENCES users(id)
 );
 
-CREATE INDEX idx_bk_student ON bookings(student_id);
+CREATE INDEX idx_bk_student ON bookings(user_id);
 CREATE INDEX idx_bk_slot    ON bookings(slot_id, status);
 CREATE INDEX idx_bk_time    ON bookings(class_start, class_end);
 
@@ -111,7 +111,7 @@ CREATE INDEX idx_bk_time    ON bookings(class_start, class_end);
 -- ============================================================
 CREATE TABLE eligibility_audit (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id_hash VARCHAR(64)  NOT NULL,      -- SHA-256 of student_id
+    user_id_hash VARCHAR(64)  NOT NULL,      -- SHA-256 of user_id
     action          VARCHAR(60)  NOT NULL,       -- 'search','book','extend','cancel'
     timetable_found TINYINT(1)  NOT NULL,
     decision        ENUM('allowed','denied') NOT NULL,
@@ -121,7 +121,7 @@ CREATE TABLE eligibility_audit (
     logged_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ea_hash ON eligibility_audit(student_id_hash);
+CREATE INDEX idx_ea_hash ON eligibility_audit(user_id_hash);
 CREATE INDEX idx_ea_time ON eligibility_audit(logged_at);
 
 -- ============================================================
@@ -130,7 +130,7 @@ CREATE INDEX idx_ea_time ON eligibility_audit(logged_at);
 CREATE TABLE notifications (
     id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     booking_id   INT UNSIGNED NOT NULL,
-    student_id   VARCHAR(20)  NOT NULL,
+    user_id   VARCHAR(20)  NOT NULL,
     type         ENUM('confirmation','reminder_15min','expiry_10min','auto_cancel','admin_warning') NOT NULL,
     channel      ENUM('push','sms','in_app') NOT NULL DEFAULT 'in_app',
     lang         ENUM('ms','en') NOT NULL DEFAULT 'ms',
@@ -146,7 +146,7 @@ CREATE TABLE notifications (
 CREATE TABLE violations (
     id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     booking_id   INT UNSIGNED,
-    student_id   VARCHAR(20) NOT NULL,
+    user_id   VARCHAR(20) NOT NULL,
     issued_by    INT UNSIGNED NOT NULL,         -- admin/security user id
     type         ENUM('no_show','overstay','invalid_booking','other') NOT NULL,
     description  TEXT,
@@ -203,7 +203,7 @@ INSERT INTO parking_slots (zone_id, slot_code, floor_level) VALUES
 (3,'D-01',1),(3,'D-02',1),(3,'D-03',1),(3,'D-04',1),(3,'D-05',1);
 
 -- Demo Users (passwords: "password123" bcrypt)
-INSERT INTO users (student_id, full_name, email, password_hash, role, phone, lang_pref, notify_push) VALUES
+INSERT INTO users (user_id, full_name, email, password_hash, role, phone, lang_pref, notify_push) VALUES
 ('A22EC0001','Ahmad bin Hassan',  'ahmad@student.edu.my',  '$2y$12$LQv3c1yqBWVHxkd0LQ1Enc8f1c/HQvuGBkHVcuGOL8RyWnCQF5kCC','student','0123456789','ms',1),
 ('A22EC0002','Siti Aminah',       'siti@student.edu.my',   '$2y$12$LQv3c1yqBWVHxkd0LQ1Enc8f1c/HQvuGBkHVcuGOL8RyWnCQF5kCC','student','0129876543','ms',1),
 ('A22EC0003','Aisyah Razak',      'aisyah@student.edu.my', '$2y$12$LQv3c1yqBWVHxkd0LQ1Enc8f1c/HQvuGBkHVcuGOL8RyWnCQF5kCC','student','0112345678','ms',1),
@@ -211,7 +211,7 @@ INSERT INTO users (student_id, full_name, email, password_hash, role, phone, lan
 ('ADMIN001', 'Pakcik Rahman',     'rahman@admin.edu.my',   '$2y$12$LQv3c1yqBWVHxkd0LQ1Enc8f1c/HQvuGBkHVcuGOL8RyWnCQF5kCC','security','0198765432','ms',1);
 
 -- Sample Timetable for Ahmad (A22EC0001)
-INSERT INTO class_timetable (student_id, course_code, course_name, zone_id, venue, day_of_week, start_time, end_time, seat_count, effective_from, effective_to) VALUES
+INSERT INTO class_timetable (user_id, course_code, course_name, zone_id, venue, day_of_week, start_time, end_time, seat_count, effective_from, effective_to) VALUES
 ('A22EC0001','BEE3243','Digital Electronics',   1,'ENG Lab 2',1,'08:00:00','10:00:00',30,'2025-01-01','2025-12-31'),
 ('A22EC0001','BEE3243','Digital Electronics',   1,'ENG Lab 2',3,'08:00:00','10:00:00',30,'2025-01-01','2025-12-31'),
 ('A22EC0001','BCS3413','Operating Systems',     2,'CCI Lab 3',2,'14:00:00','16:00:00',40,'2025-01-01','2025-12-31'),

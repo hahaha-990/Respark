@@ -27,18 +27,18 @@ try {
             }
 
             // SR1: Verify timetable server-side
-            $tt = db()->prepare("SELECT * FROM class_timetable WHERE id = ? AND student_id = ?");
-            $tt->execute([$timetableId, $user['student_id']]);
+            $tt = db()->prepare("SELECT * FROM class_timetable WHERE id = ? AND user_id = ?");
+            $tt->execute([$timetableId, $user['user_id']]);
             $ttRow = $tt->fetch();
             if (!$ttRow) {
-                logEligibility($user['student_id'], 'book', false, 'denied', 'Timetable not found');
+                logEligibility($user['user_id'], 'book', false, 'denied', 'Timetable not found');
                 throw new Exception($lang==='ms' ? 'Jadual kelas tidak sah.' : 'Invalid class timetable.');
             }
 
             // Validate class is today
             $dow = (int)(new DateTime($classDate))->format('w');
             if ($ttRow['day_of_week'] != $dow) {
-                logEligibility($user['student_id'], 'book', true, 'denied', 'Day mismatch');
+                logEligibility($user['user_id'], 'book', true, 'denied', 'Day mismatch');
                 throw new Exception($lang==='ms' ? 'Hari kelas tidak padan.' : 'Class day mismatch.');
             }
 
@@ -60,20 +60,20 @@ try {
             // Prevent double-booking same student
             $dbl = db()->prepare("
                 SELECT id FROM bookings
-                WHERE student_id = ? AND status IN ('confirmed','active','pending')
+                WHERE user_id = ? AND status IN ('confirmed','active','pending')
                   AND class_start < ? AND class_end > ?
             ");
-            $dbl->execute([$user['student_id'], $classEnd, $classStart]);
+            $dbl->execute([$user['user_id'], $classEnd, $classStart]);
             if ($dbl->fetch()) {
                 throw new Exception($lang==='ms' ? 'Anda sudah mempunyai tempahan aktif.' : 'You already have an active booking.');
             }
 
             // Insert booking
             $ins = db()->prepare("
-                INSERT INTO bookings (student_id, slot_id, timetable_id, status, class_start, class_end, grace_deadline)
+                INSERT INTO bookings (user_id, slot_id, timetable_id, status, class_start, class_end, grace_deadline)
                 VALUES (?, ?, ?, 'confirmed', ?, ?, ?)
             ");
-            $ins->execute([$user['student_id'], $slotId, $timetableId, $classStart, $classEnd, $graceDeadline]);
+            $ins->execute([$user['user_id'], $slotId, $timetableId, $classStart, $classEnd, $graceDeadline]);
             $bookingId = db()->lastInsertId();
 
             // Get slot code for notification
@@ -87,10 +87,10 @@ try {
             $msgMs = "Slot {$slotData['slot_code']} berdekatan {$zoneName}, masuk sebelum {$arriveBy}.";
             $msgEn = "Slot {$slotData['slot_code']} near {$zoneName}. Please arrive before {$arriveBy}.";
             $msg = $lang==='ms' ? $msgMs : $msgEn;
-            db()->prepare("INSERT INTO notifications (booking_id, student_id, type, lang, message_body) VALUES (?,?,?,?,?)")
-               ->execute([$bookingId, $user['student_id'], 'confirmation', $lang, $msg]);
+            db()->prepare("INSERT INTO notifications (booking_id, user_id, type, lang, message_body) VALUES (?,?,?,?,?)")
+               ->execute([$bookingId, $user['user_id'], 'confirmation', $lang, $msg]);
 
-            logEligibility($user['student_id'], 'book', true, 'allowed');
+            logEligibility($user['user_id'], 'book', true, 'allowed');
 
             echo json_encode(['ok' => true, 'booking_id' => $bookingId, 'message' => $msg, 'arrive_by' => $arriveBy]);
             break;
@@ -100,8 +100,8 @@ try {
         case 'cancel_booking': {
             $bookingId = (int)($input['booking_id'] ?? 0);
 
-            $bk = db()->prepare("SELECT * FROM bookings WHERE id = ? AND student_id = ?");
-            $bk->execute([$bookingId, $user['student_id']]);
+            $bk = db()->prepare("SELECT * FROM bookings WHERE id = ? AND user_id = ?");
+            $bk->execute([$bookingId, $user['user_id']]);
             $booking = $bk->fetch();
 
             if (!$booking || !in_array($booking['status'], ['pending','confirmed','active'])) {
@@ -125,14 +125,14 @@ try {
                ->execute([$user['id'], $reason, $bookingId]);
 
             // Notify student
-            $bk = db()->prepare("SELECT b.student_id, b.class_start, ps.slot_code FROM bookings b JOIN parking_slots ps ON b.slot_id=ps.id WHERE b.id=?");
+            $bk = db()->prepare("SELECT b.user_id, b.class_start, ps.slot_code FROM bookings b JOIN parking_slots ps ON b.slot_id=ps.id WHERE b.id=?");
             $bk->execute([$bookingId]);
             $bd = $bk->fetch();
             if ($bd) {
                 $msgMs = "Tempahan slot {$bd['slot_code']} anda telah dibatalkan oleh pentadbir.";
                 $msgEn = "Your booking for slot {$bd['slot_code']} was cancelled by admin.";
-                db()->prepare("INSERT INTO notifications (booking_id, student_id, type, lang, message_body) VALUES (?,?,?,?,?)")
-                   ->execute([$bookingId, $bd['student_id'], 'admin_warning', $user['lang_pref']??'ms', $lang==='ms'?$msgMs:$msgEn]);
+                db()->prepare("INSERT INTO notifications (booking_id, user_id, type, lang, message_body) VALUES (?,?,?,?,?)")
+                   ->execute([$bookingId, $bd['user_id'], 'admin_warning', $user['lang_pref']??'ms', $lang==='ms'?$msgMs:$msgEn]);
             }
 
             echo json_encode(['ok' => true]);
@@ -144,8 +144,8 @@ try {
             $bookingId   = (int)($input['booking_id'] ?? 0);
             $newEndTime  = $input['new_end_time'] ?? ''; // HH:MM
 
-            $bk = db()->prepare("SELECT b.*, ct.end_time as tt_end, ct.day_of_week FROM bookings b JOIN class_timetable ct ON b.timetable_id=ct.id WHERE b.id=? AND b.student_id=?");
-            $bk->execute([$bookingId, $user['student_id']]);
+            $bk = db()->prepare("SELECT b.*, ct.end_time as tt_end, ct.day_of_week FROM bookings b JOIN class_timetable ct ON b.timetable_id=ct.id WHERE b.id=? AND b.user_id=?");
+            $bk->execute([$bookingId, $user['user_id']]);
             $booking = $bk->fetch();
 
             if (!$booking) throw new Exception($lang==='ms' ? 'Tempahan tidak dijumpai.' : 'Booking not found.');
@@ -187,19 +187,19 @@ try {
             if (!in_array($user['role'], ['admin','security'])) throw new Exception('Forbidden');
 
             $bookingId = $input['booking_id'] ? (int)$input['booking_id'] : null;
-            $studentId = $input['student_id'] ?? '';
+            $studentId = $input['user_id'] ?? '';
             $type      = $input['type'] ?? 'other';
             $desc      = $input['description'] ?? '';
 
             if (!in_array($type, ['no_show','overstay','invalid_booking','other'])) $type = 'other';
 
-            db()->prepare("INSERT INTO violations (booking_id, student_id, issued_by, type, description) VALUES (?,?,?,?,?)")
+            db()->prepare("INSERT INTO violations (booking_id, user_id, issued_by, type, description) VALUES (?,?,?,?,?)")
                ->execute([$bookingId, $studentId, $user['id'], $type, $desc]);
 
             // Notify student
             $msgMs = "Amaran pelanggaran telah dikeluarkan terhadap anda: $type. Sila hubungi pentadbir.";
             $msgEn = "A violation warning has been issued against you: $type. Please contact admin.";
-            db()->prepare("INSERT INTO notifications (booking_id, student_id, type, lang, message_body) VALUES (?,?,?,?,?)")
+            db()->prepare("INSERT INTO notifications (booking_id, user_id, type, lang, message_body) VALUES (?,?,?,?,?)")
                ->execute([$bookingId, $studentId, 'admin_warning', 'ms', $msgMs]);
 
             echo json_encode(['ok' => true]);

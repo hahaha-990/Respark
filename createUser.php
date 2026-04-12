@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo = db();
             
             // Check if student ID or email already exists
-            $checkStmt = $pdo->prepare("SELECT id FROM users WHERE student_id = ? OR email = ?");
+            $checkStmt = $pdo->prepare("SELECT id FROM users WHERE user_id = ? OR email = ?");
             $checkStmt->execute([$studentId, $email]);
             $checkResult = $checkStmt->fetchAll();
 
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
                 // Insert new user
-                $insertStmt = $pdo->prepare("INSERT INTO users (student_id, full_name, email, password_hash, role, phone, lang_pref, notify_push) VALUES (?, ?, ?, ?, 'student', ?, ?, ?)");
+                $insertStmt = $pdo->prepare("INSERT INTO users (user_id, full_name, email, password_hash, role, phone, lang_pref, notify_push) VALUES (?, ?, ?, ?, 'student', ?, ?, ?)");
                 $insertResult = $insertStmt->execute([$studentId, $fullname, $email, $hashedPassword, $phone, $langPref, $notifyPush]);
 
                 if ($insertResult) {
