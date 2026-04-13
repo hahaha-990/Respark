@@ -16,7 +16,7 @@ $stmtTT = db()->prepare("
     SELECT ct.*, cz.name as zone_name, cz.name_ms as zone_name_ms, cz.code as zone_code
     FROM class_timetable ct
     JOIN campus_zones cz ON ct.zone_id = cz.id
-    WHERE ct.user_id = ?
+    WHERE ct.student_id = ?
       AND ct.day_of_week = ?
       AND ? BETWEEN ct.effective_from AND ct.effective_to
     ORDER BY ct.start_time
@@ -72,7 +72,7 @@ $stmtBk = db()->prepare("
     JOIN parking_slots ps ON b.slot_id = ps.id
     JOIN campus_zones cz ON ps.zone_id = cz.id
     JOIN class_timetable ct ON b.timetable_id = ct.id
-    WHERE b.user_id = ?
+    WHERE b.student_id = ?
       AND b.status IN ('pending','confirmed','active')
     ORDER BY b.class_start DESC
 ");
@@ -82,7 +82,7 @@ $activeBookings = $stmtBk->fetchAll();
 // ── Notifications ─────────────────────────────────────────
 $stmtNotif = db()->prepare("
     SELECT * FROM notifications
-    WHERE user_id = ? AND delivered = 0
+    WHERE student_id = ? AND delivered = 0
     ORDER BY id DESC LIMIT 10
 ");
 $stmtNotif->execute([$user['user_id']]);
@@ -101,7 +101,7 @@ $stmtHist = db()->prepare("
     JOIN parking_slots ps ON b.slot_id = ps.id
     JOIN campus_zones cz ON ps.zone_id = cz.id
     JOIN class_timetable ct ON b.timetable_id = ct.id
-    WHERE b.user_id = ?
+    WHERE b.student_id = ?
       AND b.status IN ('completed','cancelled','auto_cancelled')
     ORDER BY b.booked_at DESC LIMIT 10
 ");

@@ -73,7 +73,7 @@ function studentIdHash(string $id): string {
 function logEligibility(string $studentId, string $action, bool $found, string $decision, string $reason = '', string $device = ''): void {
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     db()->prepare("INSERT INTO eligibility_audit
-        (user_id_hash, action, timetable_found, decision, deny_reason, requestor_ip, device_info)
+        (student_id_hash, action, timetable_found, decision, deny_reason, requestor_ip, device_info)
         VALUES (?,?,?,?,?,?,?)")
         ->execute([studentIdHash($studentId), $action, $found ? 1 : 0, $decision, $reason, $ip, substr($device ?: ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 250)]);
 }
