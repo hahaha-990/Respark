@@ -20,14 +20,14 @@ $utilizationPct = $stats['total_slots'] > 0
 
 // ── Live bookings feed ────────────────────────────────────
 $liveBookings = db()->query("
-    SELECT b.id, b.user_id, b.status, b.class_start, b.class_end, b.grace_deadline,
+    SELECT b.id, b.student_id, b.status, b.class_start, b.class_end, b.grace_deadline,
            b.booked_at, ps.slot_code, cz.name as zone_name, cz.name_ms as zone_name_ms,
            ct.course_code, ct.course_name, u.full_name
     FROM bookings b
     JOIN parking_slots ps ON b.slot_id = ps.id
     JOIN campus_zones cz ON ps.zone_id = cz.id
     JOIN class_timetable ct ON b.timetable_id = ct.id
-    LEFT JOIN users u ON b.user_id = u.user_id
+    LEFT JOIN users u ON b.student_id = u.user_id
     WHERE b.status IN ('pending','confirmed','active')
     ORDER BY b.booked_at DESC
     LIMIT 50
@@ -48,7 +48,7 @@ $zones = db()->query("
 $violations = db()->query("
     SELECT v.*, u.full_name, ub.full_name as issued_by_name
     FROM violations v
-    LEFT JOIN users u ON v.user_id = u.user_id
+    LEFT JOIN users u ON v.student_id = u.user_id
     LEFT JOIN users ub ON v.issued_by = ub.id
     WHERE v.status = 'open'
     ORDER BY v.issued_at DESC LIMIT 20

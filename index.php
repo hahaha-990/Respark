@@ -148,10 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </form>
 
                 <div class="demo-creds">
-                    <p><strong><?= $lang === 'ms' ? 'Akaun demo:' : 'Demo accounts:' ?></strong></p>
-                    <p><?= $lang === 'ms' ? 'Pelajar' : 'Student' ?>: <code>A22EC0001</code> / <code>password123</code>
-                    </p>
-                    <p><?= $lang === 'ms' ? 'Admin' : 'Admin' ?>: <code>ADMIN001</code> / <code>password123</code></p>
+                    <p><?= $lang === 'ms' ? 'Tidak ada akaun?' : 'Don\'t have an account?' ?> <a href="createUser.php"><?= $lang === 'ms' ? 'Daftar di sini' : 'Register here' ?></a></p>
                 </div>
             </div>
         </div>
